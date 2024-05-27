@@ -21,11 +21,8 @@ jobs:
 
       - name: Check if development branch exists
         run: |
-          if ! git show-ref --verify --quiet refs/heads/development; then
-            echo "Development branch does not exist. Creating..."
             git checkout -b development
             git commit --allow-empty -m "Initial commit"
             git push origin development
-          else
             echo "Development branch already exists."
-          fi
+         
