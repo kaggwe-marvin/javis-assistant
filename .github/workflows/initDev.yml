@@ -12,6 +12,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set Git user identity
+        run: |
+          git config --global user.email "kiwanukamarvin579.com"
+          git config --global user.name "kaggwe-marvin"
+
       - name: Initialize repository with initial commit
         run: |
           git commit --allow-empty -m "Initial commit"
