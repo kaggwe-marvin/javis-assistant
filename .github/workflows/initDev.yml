@@ -24,8 +24,10 @@ jobs:
           if ! git show-ref --verify --quiet refs/heads/main; then
             echo "Main branch does not exist. Creating..."
             git checkout -b main
-            git config pull.rebase false
             git pull origin main --allow-unrelated-histories
+            git merge --no-commit --allow-unrelated-histories origin/main
+            git mergetool  # Optional: Open mergetool if there are conflicts
+            git commit -m "Resolved merge conflict"
             git push origin main
           else
             echo "Main branch already exists."
