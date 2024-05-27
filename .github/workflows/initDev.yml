@@ -1,86 +1,70 @@
 name: Create Development Branch On Repo Init
 
-# Trigger the workflow when a new branch is created, specifically the main branch
 on:
   create:
     branches:
       - main
 
 jobs:
-  # Job to setup branches
   setup-branches:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      # Checkout the main branch to start the workflow
       - name: Checkout main branch
         uses: actions/checkout@v4
 
-      # Set Git user identity for committing changes
       - name: Set Git user identity
         run: |
           git config --global user.email "kiwanukamarvin597@gmail.com"
           git config --global user.name "saybaba"
 
-      # Check if the development branch exists; if not, create it
       - name: Create development branch if it does not exist
         run: |
           if ! git show-ref --verify --quiet refs/heads/development; then
             git checkout -b development
-            git push origin development
+            git push origin development:development
           else
-            echo "Development branch already exists."
+            echo ":: Development branch already exists."
           fi
 
-      # Checkout the development branch
       - name: Checkout development branch
         run: |
           git checkout development
 
-      # Create a new feature branch from the development branch
       - name: Create feature branch from development branch
         run: |
-          git checkout -b feature/setup-branch
+          git checkout -b feature/setup-branch development
           
-      # Touch create_branch.sh file and add script content
-      - name: Touch create_branch.sh
+      - name: Touch create_branch.sh and set permissions
         run: |
           touch create_branch.sh
-          echo '#!/bin/bash
-create_branch() {
-  local prefix=$1
-  local name=$2
-  local branch_name="${prefix}/${name}"
+          chmod +x create_branch.sh
 
-  # Check if the development branch exists; if not, exit
-  if ! git show-ref --verify --quiet refs/heads/development; then
-    echo "Development branch does not exist. Exiting."
-    exit 1
-  fi
+      - name: Generate create_branch.sh content
+        run: |
+          echo '#!/bin/bash' > create_branch.sh
+          echo 'create_branch() {' >> create_branch.sh
+          echo 'local prefix="${prefix}/${name}"' >> create_branch.sh
+          echo 'if ! git show-ref --verify --quiet refs/heads/development; then' >> create_branch.sh
+          echo 'echo ":: Development branch does not exist. Exiting."' >> create_branch.sh
+          echo 'exit 1' >> create_branch.sh
+          echo 'fi' >> create_branch.sh
+          echo 'git checkout development' >> create_branch.sh
+          echo 'git pull origin development' >> create_branch.sh
+          echo 'git checkout -b "$branch_name"' >> create_branch.sh
+          echo 'git push -u origin "$branch_name"' >> create_branch.sh
+          echo 'echo ":: Branch '''$branch_name''' created and pushed to remote."' >> create_branch.sh
+          echo '}' >> create_branch.sh
+          echo 'if [ "$#" -ne 1 ]; then' >> create_branch.sh
+          echo 'echo ":: Usage: $0 [feature|bugfix]"' >> create_branch.sh
+          echo 'exit 1' >> create_branch.sh
+          echo 'fi' >> create_branch.sh
+          echo 'type=$1' >> create_branch.sh
+          echo 'echo ":: Enter the branch name:"' >> create_branch.sh
+          echo 'read name' >> create_branch.sh
+          echo 'create_branch "$type" "$name"' >> create_branch.sh
 
-  # Checkout development branch, pull latest changes, create and push new branch
-  git checkout development
-  git pull origin development
-  git checkout -b "$branch_name"
-  git push -u origin "$branch_name"
-  echo "Branch '\''$branch_name'\'' created and pushed to remote."
-}
-
-# Check if exactly one argument is provided; if not, display usage message and exit
-if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 [feature|bugfix]"
-  exit 1
-fi
-
-# Prompt user to enter branch name and call create_branch function
-type=$1
-echo "Enter the branch name:"
-read name
-
-create_branch "$type" "$name"' > create_branch.sh
-
-      # Commit and push the newly created feature branch
       - name: Commit and push feature branch
         run: |
           git add create_branch.sh
