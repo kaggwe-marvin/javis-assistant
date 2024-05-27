@@ -17,34 +17,24 @@ jobs:
       - name: Set Git user identity
         run: |
           git config --global user.email "javis@github.com"
-          git config --global user.name "Javis GitHub Actions"
+          git config --global user.name "Javis Ghost Actions"
 
-      - name: Check if main branch exists
+      - name: Check if development branch exists
         run: |
-          if ! git show-ref --verify --quiet refs/heads/main; then
-            echo "Main branch does not exist. Creating..."
-            git checkout -b main
-            git config pull.rebase false # merge
-            git pull origin main --allow-unrelated-histories
-            git merge --no-commit --allow-unrelated-histories origin/main
-            git mergetool
-            git commit -m "Resolved merge conflict"
-            git push origin main
+          if ! git show-ref --verify --quiet refs/heads/development; then
+            echo "Development branch does not exist. Creating..."
+            git checkout -b development
+            git commit --allow-empty -m "Initial commit"
+            git push origin development
           else
-            echo "Main branch already exists."
+            echo "Development branch already exists."
           fi
-
-      - name: Initialize repository with initial commit
-        run: |
-          git checkout -b development
-          git commit --allow-empty -m "Initial commit"
-          git push origin development
 
       - name: Pull latest changes from main
         run: |
           git pull origin main
 
-      - name: Create development branch
+      - name: Push changes to development branch
         run: |
           git checkout -b development
           git push origin development
