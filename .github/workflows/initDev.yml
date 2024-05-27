@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Set Git user identity
         run: |
           git config --global user.email "kiwanukamarvin597@gmail.com"
@@ -21,14 +21,11 @@ jobs:
 
       - name: Create development branch
         run: |
-          if ! git show-ref --verify --quiet refs/heads/main; then
-            echo "Creating...development branch... "
+          if ! git show-ref --verify --quiet refs/heads/development; then
+            echo "Creating development branch..."
             git checkout -b development
-            git commit --allow-empty -m "Initial commit"
-            git pull origin development
             git push origin development
-            else
-            echo "development branch not created"
+            echo "Development branch created successfully"
+          else
+            echo "Development branch already exists."
           fi
-            echo "Development branch created sucessfully"
-         
