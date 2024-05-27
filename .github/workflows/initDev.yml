@@ -23,6 +23,7 @@ jobs:
         run: |
             git checkout -b development
             git commit --allow-empty -m "Initial commit"
+            git pull origin development
             git push origin development
             echo "Development branch already exists."
          
