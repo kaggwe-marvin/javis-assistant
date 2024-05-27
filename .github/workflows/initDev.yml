@@ -29,12 +29,3 @@ jobs:
           else
             echo "Development branch already exists."
           fi
-
-      - name: Pull latest changes from main
-        run: |
-          git pull origin main
-
-      - name: Push changes to development branch
-        run: |
-          git checkout -b development
-          git push origin development
