@@ -13,6 +13,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        
+      - name: Set Git user identity
+        run: |
+          git config --global user.email "kiwanukamarvin597@gmail.com"
+          git config --global user.name "saybaba"
 
       - name: Create development branch
         run: |
