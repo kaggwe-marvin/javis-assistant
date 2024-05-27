@@ -24,6 +24,7 @@ jobs:
           if ! git show-ref --verify --quiet refs/heads/main; then
             echo "Main branch does not exist. Creating..."
             git checkout -b main
+            git pull origin main
             git push origin main
           else
             echo "Main branch already exists."
