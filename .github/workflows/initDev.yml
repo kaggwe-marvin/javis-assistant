@@ -14,16 +14,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set Git user identity
-        run: |
-          git config --global user.email "javis@github.com"
-          git config --global user.name "Javis Ghost Actions"
-
-      - name: Check if development branch exists
+      - name: Create development branch
         run: |
             git checkout -b development
             git commit --allow-empty -m "Initial commit"
             git pull origin development
             git push origin development
-            echo "Development branch already exists."
+            echo "Development branch created sucessfully"
          
