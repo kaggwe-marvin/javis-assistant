@@ -1,0 +1,52 @@
+name: Add Branch Creation Script
+
+on:
+  workflow_dispatch:
+
+jobs:
+  add-branch-script:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout feature branch
+        run: git checkout feature/setup-branch
+
+      - name: Create script for branch creation
+        run: |
+          cat <<'EOF' > create_branch.sh
+          #!/bin/bash
+          create_branch() {
+            local branch_type=$1
+            local branch_name=$2
+            local full_branch_name="${branch_type}/${branch_name}"
+            
+            if ! git show-ref --verify --quiet refs/heads/development; then
+              echo ":: Development branch does not exist. Exiting."
+              exit 1
+            fi
+
+            git checkout development
+            git pull origin development
+            git checkout -b "$full_branch_name"
+            git push -u origin "$full_branch_name"
+            echo ":: Branch $full_branch_name created and pushed to remote."
+          }
+
+          if [ "$#" -ne 2 ]; then
+            echo ":: Usage: $0 [feature|bugfix|hotfix|release] <branch-name>"
+            exit 1
+          fi
+
+          create_branch "$1" "$2"
+          EOF
+
+      - name: Make script executable
+        run: chmod +x create_branch.sh
+
+      - name: Commit and push feature branch
+        run: |
+          git add create_branch.sh
+          git commit -m "Add create_branch.sh"
+          git push origin feature/setup-branch
