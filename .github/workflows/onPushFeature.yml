@@ -55,8 +55,8 @@ jobs:
       contents: read
 
     steps:
-      - name: Auto PR Review Bot
-        uses: omio-labs/pr-reviewer-bot@v1
+      - name: Auto PR Review
+        uses: actions-cool/pr-review@v0.0.1-beat
         with:
           GITHUB_TOKEN: ${{ secrets.AUTO_PR_BOT }}
 
