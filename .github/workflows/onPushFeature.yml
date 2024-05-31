@@ -52,6 +52,7 @@ jobs:
     needs: create-pr
     permissions:
       pull-requests: write
+      contents: read
 
     steps:
       - name: Auto PR Review Bot
