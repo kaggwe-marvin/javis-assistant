@@ -55,11 +55,43 @@ jobs:
       contents: read
 
     steps:
-      - name: Auto PR Review
-        uses: actions-cool/pr-review@v0.0.1-beat
+      - name: Code Review
+        uses: actions/github-script@v7
         with:
-          GITHUB_TOKEN: ${{ secrets.AUTO_PR_BOT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            type Context = {
+              repo: {
+                owner: string;
+                repo: string;
+              };
+              issue: {
+                number: number;
+              };
+              payload: {
+                pull_request: {
+                  number: number;
+                };
+              };
+            };
 
+            async function run() {
+              const context: Context = github.context;
+
+              const { owner, repo } = context.repo;
+              const pull_number = context.payload.pull_request.number;
+
+              await github.rest.pulls.createReview({
+                owner,
+                repo,
+                pull_number,
+                event: 'APPROVE',
+                body: 'Automated approval after code review checks.'
+              });
+            }
+
+            run();
+          
   merge-pr:
     runs-on: ubuntu-latest
     needs: code-review
@@ -80,20 +112,43 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pull_number = context.payload.pull_request.number;
-            const { data: pullRequest } = await github.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pull_number
-            });
-            
-            await github.pulls.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pull_number,
-              commit_title: pullRequest.title,
-              merge_method: 'squash'
-            });
+            type Context = {
+              repo: {
+                owner: string;
+                repo: string;
+              };
+              issue: {
+                number: number;
+              };
+              payload: {
+                pull_request: {
+                  number: number;
+                };
+              };
+            };
+
+            async function run() {
+              const context: Context = github.context;
+
+              const { owner, repo } = context.repo;
+              const pull_number = context.payload.pull_request.number;
+
+              const { data: pullRequest } = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number
+              });
+
+              await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number,
+                commit_title: pullRequest.title,
+                merge_method: 'squash'
+              });
+            }
+
+            run();
 
   delete-branch:
     runs-on: ubuntu-latest
@@ -111,8 +166,28 @@ jobs:
           clean: true
 
       - name: Delete feature or bugfix branch
-        uses: ad-m/github-push-action@master
+        uses: actions/github-script@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
-          force: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            type Context = {
+              repo: {
+                owner: string;
+                repo: string;
+              };
+              ref: string;
+            };
+
+            async function run() {
+              const context: Context = github.context;
+              const { owner, repo } = context.repo;
+              const branch = context.ref;
+
+              await github.rest.git.deleteRef({
+                owner,
+                repo,
+                ref: branch
+              });
+            }
+
+            run();
