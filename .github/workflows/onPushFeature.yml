@@ -57,7 +57,7 @@ jobs:
       - name: Auto PR Review Bot
         uses: omio-labs/pr-reviewer-bot@v1
         with:
-          GITHB_TOKEN: ${{ secrets.GITHB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.AUTO_PR_BOT }}
 
   merge-pr:
     runs-on: ubuntu-latest
