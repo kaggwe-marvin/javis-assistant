@@ -54,14 +54,10 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Auto reviews
-        uses: golfzaptw/action-auto-reviews-from-branches@2.0.0
+      - name: Auto PR Review Bot
+        uses: omio-labs/pr-reviewer-bot@v1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EVENT_TYPE: APPROVE
-          BRANCHES: 'feature/*,bugfix/*'
-          AUTHOR: ${{ github.actor }}
-          MESSAGE: "Success approve. Enjoy 🏳️‍🌈🎉."
 
   merge-pr:
     runs-on: ubuntu-latest
@@ -83,7 +79,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pull_number = context.payload.pull_request.number
+            const pull_number = context.payload.pull_request.number;
             const { data: pullRequest } = await github.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
