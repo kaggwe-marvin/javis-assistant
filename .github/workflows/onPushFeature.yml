@@ -1,0 +1,120 @@
+name: Feature and Bugfix Branch Workflow
+
+on:
+  push:
+    branches:
+      - 'feature/*'
+      - 'bugfix/*'
+
+permissions:
+  pull-requests: write
+  checks: write
+  contents: read
+  issues: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          persist-credentials: true
+          clean: true
+
+      - name: Get branch names
+        id: branch-names
+        uses: tj-actions/branch-names@v8
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6.0.5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "New ${steps.branch-names.outputs.current_branch}: ${{ github.event.head_ref }}"
+          committer: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          author: "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
+          branch: "${{ steps.branch-names.outputs.current_branch }}"
+          base: "development"
+          title: "${{ steps.branch-names.outputs.current_branch }}: ${{ github.event.head_ref }}"
+          body: "This pull request is automatically generated for the ${{ steps.branch-names.outputs.current_branch }} branch."
+          labels: "${{ steps.branch-names.outputs.current_branch }}"
+          draft: false
+
+  code-review:
+    runs-on: ubuntu-latest
+    needs: create-pr
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Auto reviews
+        uses: golfzaptw/action-auto-reviews-from-branches@2.0.0
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_TYPE: APPROVE
+          BRANCHES: 'feature/*,bugfix/*'
+          AUTHOR: ${{ github.actor }}
+          MESSAGE: "Success approve. Enjoy 🏳️‍🌈🎉."
+
+  merge-pr:
+    runs-on: ubuntu-latest
+    needs: code-review
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          persist-credentials: true
+          clean: true
+
+      - name: Merge pull request
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: pullRequest } = await github.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
+            
+            await github.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              commit_title: pullRequest.title,
+              merge_method: 'squash'
+            });
+
+  delete-branch:
+    runs-on: ubuntu-latest
+    needs: merge-pr
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          persist-credentials: true
+          clean: true
+
+      - name: Delete feature or bugfix branch
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+          force: true
