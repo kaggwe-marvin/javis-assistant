@@ -34,6 +34,7 @@ jobs:
         uses: tj-actions/branch-names@v8
 
       - name: Create Pull Request
+        id: create-pr
         uses: peter-evans/create-pull-request@v6.0.5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -60,38 +61,44 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { context, github } = require('@actions/github');
+
             type Context = {
               repo: {
                 owner: string;
                 repo: string;
               };
-              issue: {
+              pull_request: {
                 number: number;
-              };
-              payload: {
-                pull_request: {
-                  number: number;
-                };
               };
             };
 
             async function run() {
               const context: Context = github.context;
-
               const { owner, repo } = context.repo;
-              const pull_number = context.payload.pull_request.number;
+              const pull_number = ${{ needs.create-pr.outputs['pull-request-number'] }};
 
-              await github.rest.pulls.createReview({
+              const files = await github.pulls.listFiles({
                 owner,
                 repo,
                 pull_number,
-                event: 'APPROVE',
-                body: 'Automated approval after code review checks.'
               });
+
+              const hasJavaScriptChanges = files.data.some(file => file.filename.endsWith('.js') || file.filename.endsWith('.ts'));
+
+              if (hasJavaScriptChanges) {
+                await github.pulls.createReview({
+                  owner,
+                  repo,
+                  pull_number,
+                  event: 'APPROVE',
+                  body: 'Automated approval after code review checks.'
+                });
+              }
             }
 
             run();
-          
+
   merge-pr:
     runs-on: ubuntu-latest
     needs: code-review
@@ -112,34 +119,30 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { context, github } = require('@actions/github');
+
             type Context = {
               repo: {
                 owner: string;
                 repo: string;
               };
-              issue: {
+              pull_request: {
                 number: number;
-              };
-              payload: {
-                pull_request: {
-                  number: number;
-                };
               };
             };
 
             async function run() {
               const context: Context = github.context;
-
               const { owner, repo } = context.repo;
-              const pull_number = context.payload.pull_request.number;
+              const pull_number = ${{ needs.create-pr.outputs['pull-request-number'] }};
 
-              const { data: pullRequest } = await github.rest.pulls.get({
+              const { data: pullRequest } = await github.pulls.get({
                 owner,
                 repo,
                 pull_number
               });
 
-              await github.rest.pulls.merge({
+              await github.pulls.merge({
                 owner,
                 repo,
                 pull_number,
@@ -170,23 +173,29 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { context, github } = require('@actions/github');
+
             type Context = {
               repo: {
                 owner: string;
                 repo: string;
               };
-              ref: string;
+              pull_request: {
+                head: {
+                  ref: string;
+                };
+              };
             };
 
             async function run() {
               const context: Context = github.context;
               const { owner, repo } = context.repo;
-              const branch = context.ref;
+              const branch = context.payload.pull_request.head.ref;
 
-              await github.rest.git.deleteRef({
+              await github.git.deleteRef({
                 owner,
                 repo,
-                ref: branch
+                ref: `heads/${branch}`
               });
             }
 
