@@ -56,27 +56,16 @@ jobs:
       contents: read
 
     steps:
-      - name: Code Review
+      - name: Auto PR Review
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { context, github } = require('@actions/github');
-
-            type Context = {
-              repo: {
-                owner: string;
-                repo: string;
-              };
-              pull_request: {
-                number: number;
-              };
-            };
+            const { github, context } = require('@actions/github');
 
             async function run() {
-              const context: Context = github.context;
+              const pull_number = ${{ steps.create-pr.outputs['pull-request-number'] }};
               const { owner, repo } = context.repo;
-              const pull_number = ${{ needs.create-pr.outputs['pull-request-number'] }};
 
               const files = await github.pulls.listFiles({
                 owner,
@@ -119,27 +108,16 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { context, github } = require('@actions/github');
-
-            type Context = {
-              repo: {
-                owner: string;
-                repo: string;
-              };
-              pull_request: {
-                number: number;
-              };
-            };
+            const { github, context } = require('@actions/github');
 
             async function run() {
-              const context: Context = github.context;
+              const pull_number = ${{ steps.create-pr.outputs['pull-request-number'] }};
               const { owner, repo } = context.repo;
-              const pull_number = ${{ needs.create-pr.outputs['pull-request-number'] }};
 
               const { data: pullRequest } = await github.pulls.get({
                 owner,
                 repo,
-                pull_number
+                pull_number,
               });
 
               await github.pulls.merge({
@@ -147,7 +125,7 @@ jobs:
                 repo,
                 pull_number,
                 commit_title: pullRequest.title,
-                merge_method: 'squash'
+                merge_method: 'squash',
               });
             }
 
@@ -173,29 +151,16 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { context, github } = require('@actions/github');
-
-            type Context = {
-              repo: {
-                owner: string;
-                repo: string;
-              };
-              pull_request: {
-                head: {
-                  ref: string;
-                };
-              };
-            };
+            const { github, context } = require('@actions/github');
 
             async function run() {
-              const context: Context = github.context;
-              const { owner, repo } = context.repo;
               const branch = context.payload.pull_request.head.ref;
+              const { owner, repo } = context.repo;
 
               await github.git.deleteRef({
                 owner,
                 repo,
-                ref: `heads/${branch}`
+                ref: `heads/${branch}`,
               });
             }
 
