@@ -61,7 +61,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { github, context } = require('@actions/github');
             const pull_number = ${{ steps.create-pr.outputs['pull-request-number'] }};
             const { owner, repo } = context.repo;
             const files = await github.pulls.listFiles({ owner, repo, pull_number });
