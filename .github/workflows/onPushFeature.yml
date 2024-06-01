@@ -61,7 +61,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { github: gh, context: ctx } = require('@actions/github');
+            const gh = require('@actions/github').github;
+            const ctx = require('@actions/github').context;
 
             (async function() {
               const pull_number = ${{ steps.create-pr.outputs['pull-request-number'] }};
@@ -106,7 +107,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { github: gh, context: ctx } = require('@actions/github');
+            const gh = require('@actions/github').github;
+            const ctx = require('@actions/github').context;
 
             (async function() {
               const pull_number = ${{ steps.create-pr.outputs['pull-request-number'] }};
@@ -147,7 +149,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { github: gh, context: ctx } = require('@actions/github');
+            const gh = require('@actions/github').github;
+            const ctx = require('@actions/github').context;
 
             (async function() {
               const branch = ctx.payload.pull_request.head.ref;
