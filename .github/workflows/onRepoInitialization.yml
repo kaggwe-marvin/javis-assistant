@@ -1,0 +1,199 @@
+name: Initialize Repository Branches and Add JSON Schema
+
+on:
+  create:
+
+jobs:
+  setup-git:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4.1.5
+
+      - name: Set Git user identity
+        run: |
+          git config --global user.email "kiwanukamarvin597@gmail.com"
+          git config --global user.name "saybaba"
+
+  ensure-dev-branch:
+    runs-on: ubuntu-latest
+    needs: setup-git
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+
+      - name: Get branch names
+        id: branch-names
+        uses: tj-actions/branch-names@v8
+
+      - name: Ensure development branch exists
+        run: |
+          if [[ "${{ steps.branch-names.outputs.current_branch }}" != "development" && ! git show-ref --verify --quiet refs/heads/development ]]; then
+            git checkout -b development
+            git push origin development
+          fi
+
+  create-feature-branch:
+    runs-on: ubuntu-latest
+    needs: ensure-dev-branch
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout development branch
+        run: git checkout development
+
+      - name: Create feature branch from development
+        run: git checkout -b feature/setup-branch development
+
+  add-branch-script:
+    runs-on: ubuntu-latest
+    needs: create-feature-branch
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout feature branch
+        run: git checkout feature/setup-branch
+
+      - name: Create script for branch creation
+        run: |
+          mkdir -p scripts
+          cat <<'EOF' > scripts/create_branch.sh
+          #!/bin/bash
+          create_branch() {
+            local branch_type=$1
+            local branch_name=$2
+            local full_branch_name="${branch_type}/${branch_name}"
+            
+            if ! git show-ref --verify --quiet refs/heads/development; then
+              echo ":: Development branch does not exist. Exiting."
+              exit 1
+            fi
+
+            git checkout development
+            git pull origin development
+            git checkout -b "$full_branch_name"
+            git push -u origin "$full_branch_name"
+            echo ":: Branch $full_branch_name created and pushed to remote."
+          }
+
+          if [ "$#" -ne 2 ]; then
+            echo ":: Usage: $0 [feature|bugfix|hotfix|release] <branch-name>"
+            exit 1
+          fi
+
+          create_branch "$1" "$2"
+          EOF
+
+      - name: Make script executable
+        run: chmod +x scripts/create_branch.sh
+
+      - name: Commit and push feature branch
+        run: |
+          git add scripts/create_branch.sh
+          git commit -m "Add create_branch.sh"
+          git push origin feature/setup-branch
+
+  add-commit-script:
+    runs-on: ubuntu-latest
+    needs: create-feature-branch
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout feature branch
+        run: git checkout feature/setup-branch
+
+      - name: Create commit creation script
+        run: |
+          mkdir -p scripts        
+          cat <<'EOF' > scripts/create_commit.sh
+          #!/bin/bash
+
+          # Prompt user for input
+          echo "Enter commit type (e.g., feat, fix, docs, style, refactor, perf, test, chore):"
+          read type
+
+          echo "Enter optional scope (e.g., component or file name) or leave blank:"
+          read scope
+
+          echo "Enter a brief description of the change (imperative mood, max 50 chars):"
+          read description
+
+          echo "Enter a detailed description of the change. Press Enter to skip."
+          echo "Detailed description: "
+          read body
+
+          # Construct the commit message
+          if [ -z "$scope" ]; then
+              commit_message="$type: $description"
+          else
+              commit_message="$type($scope): $description"
+          fi
+
+          # Add body if provided
+          if [ ! -z "$body" ]; then
+              commit_message="$commit_message\n\n$body"
+          fi
+
+          # Confirm the commit message
+          echo -e "\nYour commit message is:\n$commit_message"
+          echo -e "\nDo you want to proceed with this commit? (y/n)"
+          read confirm
+
+          if [ "$confirm" = "y" ]; then
+              # Stage all changes
+              git add -A
+
+              # Make the commit
+              git commit -m "$commit_message"
+              echo "Commit has been made."
+          else
+              echo "Commit has been canceled."
+          fi
+          EOF
+
+      - name: Make commit script executable
+        run: chmod +x scripts/create_commit.sh
+
+      - name: Commit and push feature branch
+        run: |
+          git add scripts/create_commit.sh
+          git commit -m "Add create_commit.sh"
+          git push origin feature/setup-branch
+
+  add-json-schema:
+    runs-on: ubuntu-latest
+    needs: create-feature-branch
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout feature branch
+        run: git checkout feature/setup-branch
+
+      - name: Create schemas folder if it doesn't exist
+        run: mkdir -p schemas
+
+      - name: Download JSON file
+        run: curl -o schemas/githubActions.json https://json.schemastore.org/github-action.json
+
+      - name: Verify JSON file content
+        run: |
+          if ! jq empty schemas/githubActions.json; then
+            echo "Downloaded JSON file is not valid. Exiting."
+            exit 1
+          fi
+
+      - name: Commit and push changes
+        run: |
+          git add schemas/githubActions.json
+          git commit -m "Add GitHub Actions JSON schema"
+          git push origin feature/setup-branch
