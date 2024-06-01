@@ -69,7 +69,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            try {
               const pull_number = ${{ steps.create-pr.outputs['pull-request-number'] }};
               const { owner, repo } = context.repo;
               const files = await github.pulls.listFiles({ owner, repo, pull_number });
@@ -77,6 +76,4 @@ jobs:
               if (hasJavaScriptChanges) {
                 await github.pulls.createReview({ owner, repo, pull_number, event: 'APPROVE', body: 'Automated approval after code review checks.' });
               }
-            } catch (error) {
-              core.setFailed(`Error during PR review: ${error.message}`);
-            }
+            
