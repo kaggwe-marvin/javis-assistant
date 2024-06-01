@@ -33,15 +33,6 @@ jobs:
         id: branch-names
         uses: tj-actions/branch-names@v8
 
-      - name: Set Label
-        id: set-label
-        run: |
-          if [[ "${{ steps.branch-names.outputs.current_branch }}" == feature/* ]]; then
-            echo "feature" >> label.txt
-          elif [[ "${{ steps.branch-names.outputs.current_branch }}" == bugfix/* ]]; then
-            echo "bugfix" >> label.txt
-          fi
-
       - name: Create Pull Request
         id: create-pr
         uses: peter-evans/create-pull-request@v6.0.5
@@ -54,26 +45,5 @@ jobs:
           base: "development"
           title: "${{ steps.branch-names.outputs.current_branch }}: ${{ github.event.head_ref }}"
           body: "This pull request is automatically generated for the ${{ steps.branch-names.outputs.current_branch }} branch."
-          labels: "${{ steps.set-label.outputs.label }}"
+          labels: "${{ steps.branch-names.outputs.current_branch }}"
           draft: false
-
-  code-review:
-    runs-on: ubuntu-latest
-    needs: create-pr
-    permissions:
-      pull-requests: write
-      contents: read
-
-    steps:
-      - name: Auto PR Review
-        uses: actions/github-script@v7
-        with:
-          script: |
-              const pull_number = ${{ steps.create-pr.outputs['pull-request-number'] }};
-              const { owner, repo } = context.repo;
-              const files = await github.pulls.listFiles({ owner, repo, pull_number });
-              const hasJavaScriptChanges = files.data.some(file => file.filename.endsWith('.js') || file.filename.endsWith('.ts'));
-              if (hasJavaScriptChanges) {
-                await github.pulls.createReview({ owner, repo, pull_number, event: 'APPROVE', body: 'Automated approval after code review checks.' });
-              }
-            
