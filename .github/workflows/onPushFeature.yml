@@ -61,11 +61,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { github: gh, context } = require('@actions/github');
+            const { github: gh, context: ctx } = require('@actions/github');
 
             (async function() {
               const pull_number = ${{ steps.create-pr.outputs['pull-request-number'] }};
-              const { owner, repo } = context.repo;
+              const { owner, repo } = ctx.repo;
 
               const files = await gh.pulls.listFiles({
                 owner,
@@ -106,11 +106,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { github: gh, context } = require('@actions/github');
+            const { github: gh, context: ctx } = require('@actions/github');
 
             (async function() {
               const pull_number = ${{ steps.create-pr.outputs['pull-request-number'] }};
-              const { owner, repo } = context.repo;
+              const { owner, repo } = ctx.repo;
 
               const { data: pullRequest } = await gh.pulls.get({
                 owner,
@@ -147,11 +147,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { github: gh, context } = require('@actions/github');
+            const { github: gh, context: ctx } = require('@actions/github');
 
             (async function() {
-              const branch = context.payload.pull_request.head.ref;
-              const { owner, repo } = context.repo;
+              const branch = ctx.payload.pull_request.head.ref;
+              const { owner, repo } = ctx.repo;
 
               await gh.git.deleteRef({
                 owner,
