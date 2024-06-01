@@ -61,31 +61,15 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const gh = require('@actions/github').github;
-            const ctx = require('@actions/github').context;
+            const { github, context } = require('@actions/github');
+            const pull_number = ${{ steps.create-pr.outputs['pull-request-number'] }};
+            const { owner, repo } = context.repo;
+            const files = await github.pulls.listFiles({ owner, repo, pull_number });
+            const hasJavaScriptChanges = files.data.some(file => file.filename.endsWith('.js') || file.filename.endsWith('.ts'));
+            if (hasJavaScriptChanges) {
+              await github.pulls.createReview({ owner, repo, pull_number, event: 'APPROVE', body: 'Automated approval after code review checks.' });
+            }
 
-            (async function() {
-              const pull_number = ${{ steps.create-pr.outputs['pull-request-number'] }};
-              const { owner, repo } = ctx.repo;
-
-              const files = await gh.pulls.listFiles({
-                owner,
-                repo,
-                pull_number,
-              });
-
-              const hasJavaScriptChanges = files.data.some(file => file.filename.endsWith('.js') || file.filename.endsWith('.ts'));
-
-              if (hasJavaScriptChanges) {
-                await gh.pulls.createReview({
-                  owner,
-                  repo,
-                  pull_number,
-                  event: 'APPROVE',
-                  body: 'Automated approval after code review checks.'
-                });
-              }
-            })();
 
   merge-pr:
     runs-on: ubuntu-latest
