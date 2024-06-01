@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.AUTO_PR_BOT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           persist-credentials: true
           clean: true
@@ -24,6 +24,8 @@ jobs:
           --body "This pull request is automatically generated for the ${GITHUB_REF_NAME} branch." \
           --base "development" \
           --head "${GITHUB_REF_NAME}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   code-review:
     runs-on: ubuntu-latest
