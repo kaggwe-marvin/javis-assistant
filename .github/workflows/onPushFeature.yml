@@ -24,10 +24,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-          persist-credentials: true
-          clean: true
+          persist-credentials: false  # Disable persisting GITHUB_TOKEN to avoid using it for authentication
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}  # Use SSH key for authentication
 
       - name: Get branch names
         id: branch-names
@@ -35,15 +33,12 @@ jobs:
 
       - name: Create Pull Request
         id: create-pr
-        uses: peter-evans/create-pull-request@v6.0.5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "New ${steps.branch-names.outputs.current_branch}: ${{ github.event.head_ref }}"
-          committer: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
-          author: "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
-          branch: "${{ steps.branch-names.outputs.current_branch }}"
-          base: "development"
-          title: "${{ steps.branch-names.outputs.current_branch }}: ${{ github.event.head_ref }}"
-          body: "This pull request is automatically generated for the ${{ steps.branch-names.outputs.current_branch }} branch."
-          labels: "${{ steps.branch-names.outputs.current_branch }}"
-          draft: false
+        run: |
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git config user.name "${{ github.actor }}"
+          git checkout -b ${{ steps.branch-names.outputs.current_branch }}
+          git push origin ${{ steps.branch-names.outputs.current_branch }}
+          hub pull-request -b development -m "New ${{ steps.branch-names.outputs.current_branch }}: ${{ github.event.head_ref }}" -h ${{ steps.branch-names.outputs.current_branch }} -o "${{ github.actor }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
