@@ -35,8 +35,7 @@ jobs:
       - name: Ensure development branch exists
         run: |
           if [[ "${{ steps.branch-names.outputs.current_branch }}" != "development" && ! git show-ref --verify --quiet refs/heads/development ]]; then
-            git checkout -b development
-            git push origin development
+          gh branch create development
           fi
 
   create-feature-branch:
