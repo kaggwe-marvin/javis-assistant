@@ -6,52 +6,45 @@ on:
       - 'feature/*'
       - 'bugfix/*'
 
-permissions:
-  pull-requests: write
-  checks: write
-  contents: read
-  issues: write
-
 jobs:
   create-pr:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          persist-credentials: false  # Disable persisting GITHUB_TOKEN to avoid using it for authentication
-          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}  # Use SSH key for authentication
-
-      - name: Get branch names
-        id: branch-names
-        uses: tj-actions/branch-names@v8
-
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          persist-credentials: true
+          clean: true
       - name: Create Pull Request
-        id: create-pr
-        uses: peter-evans/create-pull-request@v6.0.5
-        with:
-          commit-message: "New ${steps.branch-names.outputs.current_branch}: ${{ github.event.head_ref }}"
-          committer: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
-          author: "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
-          branch: "${{ steps.branch-names.outputs.current_branch }}"
-          delete-branch: true
-          base: "development"
-          title: "${{ steps.branch-names.outputs.current_branch }}: ${{ github.event.head_ref }}"
-          body: "This pull request is automatically generated for the ${{ steps.branch-names.outputs.current_branch }} branch."
-          labels: "${{ steps.branch-names.outputs.current_branch }}"
-          draft: false
-      
-      - name: Enable Pull Request Automerge
-        run: gh pr merge --merge --auto "${{ steps.create-pr.outputs.pull-request-number }}"
-        env:
-          GH_TOKEN: ${{ secrets.AUTO_PR_BOT }}
-      
-      - name: Check outputs
-        if: ${{ steps.create-pr.outputs.pull-request-number }}
         run: |
-          echo "Pull Request Number - ${{ steps.create-pr.outputs.pull-request-number }}"
+          gh pr create \
+          --title "${GITHUB_REF_NAME}: ${GITHUB_EVENT_HEAD_REF}" \
+          --body "This pull request is automatically generated for the ${GITHUB_REF_NAME} branch." \
+          --base "development" \
+          --head "${GITHUB_REF_NAME}"
+
+  code-review:
+    runs-on: ubuntu-latest
+    needs: create-pr
+    steps:
+      - name: Auto PR Review
+        run: |
+          gh pr review --approve ${GITHUB_EVENT_PULL_REQUEST_NUMBER}
+
+  merge-pr:
+    runs-on: ubuntu-latest
+    needs: code-review
+    steps:
+      - name: Merge Pull Request
+        run: |
+          gh pr merge --squash --commit-title "${GITHUB_EVENT_PULL_REQUEST_TITLE}" ${GITHUB_EVENT_PULL_REQUEST_NUMBER}
+
+  delete-branch:
+    runs-on: ubuntu-latest
+    needs: merge-pr
+    steps:
+      - name: Delete feature or bugfix branch
+        run: |
+          gh branch delete ${GITHUB_REF_NAME} --force
