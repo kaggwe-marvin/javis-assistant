@@ -34,8 +34,9 @@ jobs:
 
       - name: Ensure development branch exists
         run: |
-          if [[ "${{ steps.branch-names.outputs.current_branch }}" != "development" && ! git show-ref --verify --quiet refs/heads/development ]]; then
-          gh branch create development
+          if [[ "${{ steps.branch-names.outputs.current_branch }}" != "development" && ! $(git show-ref --verify --quiet refs/heads/development) ]]; then
+            git checkout -b development
+            git push origin development
           fi
 
   create-feature-branch:
@@ -46,7 +47,9 @@ jobs:
 
     steps:
       - name: Checkout development branch
-        run: git checkout development
+        run: |
+          git fetch origin
+          git checkout development
 
       - name: Create feature branch from development
         run: git checkout -b feature/setup-branch development
@@ -59,7 +62,9 @@ jobs:
 
     steps:
       - name: Checkout feature branch
-        run: git checkout feature/setup-branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/setup-branch
 
       - name: Create script for branch creation
         run: |
@@ -108,11 +113,13 @@ jobs:
 
     steps:
       - name: Checkout feature branch
-        run: git checkout feature/setup-branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/setup-branch
 
       - name: Create commit creation script
         run: |
-          mkdir -p scripts        
+          mkdir -p scripts
           cat <<'EOF' > scripts/create_commit.sh
           #!/bin/bash
 
@@ -176,7 +183,9 @@ jobs:
 
     steps:
       - name: Checkout feature branch
-        run: git checkout feature/setup-branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/setup-branch
 
       - name: Create schemas folder if it doesn't exist
         run: mkdir -p schemas
